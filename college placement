@@ -1,0 +1,160 @@
+import java.io.*;
+import java.util.*;
+
+class Student {
+    String name;
+    String rollNo;
+    String department;
+    String company;
+    boolean isPlaced;
+
+    public Student(String name, String rollNo, String department, String company, boolean isPlaced) {
+        this.name = name;
+        this.rollNo = rollNo;
+        this.department = department;
+        this.company = company;
+        this.isPlaced = isPlaced;
+    }
+
+    @Override
+    public String toString() {
+        return rollNo + "," + name + "," + department + "," + company + "," + isPlaced;
+    }
+
+    public static Student fromString(String data) {
+        String[] parts = data.split(",");
+        return new Student(parts[1], parts[0], parts[2], parts[3], Boolean.parseBoolean(parts[4]));
+    }
+}
+
+public class CollegePlacementTracker {
+    static final String FILE = "placement_data.txt";
+    static Scanner sc = new Scanner(System.in);
+
+    public static void main(String[] args) {
+        while (true) {
+            System.out.println("\n--- College Placement Tracker ---");
+            System.out.println("1. Add Student Placement");
+            System.out.println("2. Update Placement Status");
+            System.out.println("3. View All Students");
+            System.out.println("4. View Placed Students");
+            System.out.println("5. View Unplaced Students");
+            System.out.println("6. Search by Department");
+            System.out.println("7. Exit");
+            System.out.print("Choose an option: ");
+            int ch = sc.nextInt(); sc.nextLine();
+
+            switch (ch) {
+                case 1: addStudent(); break;
+                case 2: updateStatus(); break;
+                case 3: viewStudents(); break;
+                case 4: filterStudents(true); break;
+                case 5: filterStudents(false); break;
+                case 6: searchByDepartment(); break;
+                case 7: System.out.println("Exiting..."); return;
+                default: System.out.println("Invalid choice.");
+            }
+        }
+    }
+
+    static void addStudent() {
+        System.out.print("Enter Roll No: ");
+        String roll = sc.nextLine();
+        System.out.print("Enter Name: ");
+        String name = sc.nextLine();
+        System.out.print("Enter Department: ");
+        String dept = sc.nextLine();
+        System.out.print("Enter Company (or 'NA' if not placed): ");
+        String company = sc.nextLine();
+        boolean placed = !company.equalsIgnoreCase("NA");
+
+        Student s = new Student(name, roll, dept, company, placed);
+        try (FileWriter fw = new FileWriter(FILE, true)) {
+            fw.write(s.toString() + "\n");
+            System.out.println("Student added.");
+        } catch (IOException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    static void updateStatus() {
+        System.out.print("Enter Roll No to update: ");
+        String roll = sc.nextLine();
+        List<String> updatedList = new ArrayList<>();
+        boolean found = false;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                Student s = Student.fromString(line);
+                if (s.rollNo.equals(roll)) {
+                    System.out.print("Enter new company: ");
+                    s.company = sc.nextLine();
+                    s.isPlaced = true;
+                    found = true;
+                }
+                updatedList.add(s.toString());
+            }
+        } catch (IOException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE))) {
+            for (String l : updatedList) {
+                bw.write(l + "\n");
+            }
+        } catch (IOException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+
+        if (found) System.out.println("Placement status updated.");
+        else System.out.println("Student not found.");
+    }
+
+    static void viewStudents() {
+        try (BufferedReader br = new BufferedReader(new FileReader(FILE))) {
+            String line;
+            System.out.println("\n-- All Students --");
+            while ((line = br.readLine()) != null) {
+                Student s = Student.fromString(line);
+                System.out.println("Roll: " + s.rollNo + ", Name: " + s.name + ", Dept: " + s.department +
+                        ", Company: " + s.company + ", Placed: " + s.isPlaced);
+            }
+        } catch (IOException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    static void filterStudents(boolean placed) {
+        try (BufferedReader br = new BufferedReader(new FileReader(FILE))) {
+            String line;
+            System.out.println(placed ? "\n-- Placed Students --" : "\n-- Unplaced Students --");
+            while ((line = br.readLine()) != null) {
+                Student s = Student.fromString(line);
+                if (s.isPlaced == placed) {
+                    System.out.println("Roll: " + s.rollNo + ", Name: " + s.name + ", Dept: " + s.department + ", Company: " + s.company);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    static void searchByDepartment() {
+        System.out.print("Enter Department to search: ");
+        String dept = sc.nextLine();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(FILE))) {
+            String line;
+            System.out.println("\n-- Students from " + dept + " Department --");
+            while ((line = br.readLine()) != null) {
+                Student s = Student.fromString(line);
+                if (s.department.equalsIgnoreCase(dept)) {
+                    System.out.println("Roll: " + s.rollNo + ", Name: " + s.name + ", Placed: " + s.isPlaced);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+}
